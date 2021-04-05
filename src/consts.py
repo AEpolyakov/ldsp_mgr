@@ -15,9 +15,10 @@ DAY_SATURDAY = 3
 # REPORTS_PATH = './files/reports.txt'
 NEW_REPORT_PATH = './files/new_report.html'
 TABLE_PATH = './files/table.html'
+INFO_PATH = './files/info.html'
 # SHORT_DAY_PATH = './files/short_days.txt'
 # HOLIDAY_PATH = './files/holidays.txt'
-# HELP_PATH = './files/help.html'
+HELP_PATH = './files/help.html'
 
 RU_DATE_FORMAT_5 = '%d.%m.%Y %H.%M'
 RU_DATE_FORMAT_3 = '%d.%m.%Y'
@@ -66,7 +67,24 @@ AWAY_TYPE_POS = 1
 AWAY_DATE1_POS = 2
 AWAY_DATE2_POS = 3
 
+DB_AWAY_ID_POS = 0
+DB_AWAY_NAME_POS = 1
+DB_AWAY_TYPE_POS = 2
+DB_AWAY_DATE1_POS = 3
+DB_AWAY_DATE2_POS = 4
+DB_AWAY_DATE_ADDED = 5
+DB_AWAY_NAME_ADDED = 6
+
 AWAY_TYPE_ADMIN = 'админ.'
 AWAY_TYPE_OTGUL = 'отгул'
 AWAY_TYPE_HOSP = 'больн.'
 AWAY_TYPE_OTPUSK = 'отпуск'
+
+INFO_AWAYS = 0
+INFO_BASE = 1
+INFO_HOLIDAY = 2
+INFO_SHORT_DAY = 3
+INFO_LAST_TAB = 4
+INFO_LAST_STATEMENT = 5
+INFO_LAST_MAGIC = 6
+INFO_HELP = 7

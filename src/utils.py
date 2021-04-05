@@ -1,15 +1,13 @@
 import calendar
-import os, sys, subprocess
+import os
 import re
+import subprocess
+import sys
 from datetime import datetime, timedelta
 from tkinter import END
 
 from consts import *
-from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways
-
-import http.client
-import socket
-
+from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways, db_get_all_aways
 
 
 def normalize(string: str):
@@ -36,7 +34,6 @@ def normalize(string: str):
 
         res = f'{temp[0]}-{temp[1]}'
 
-    print(f'string = {string} res = {res} ')
     return res
 
 
@@ -65,15 +62,15 @@ def f_to_nice_str(f: float):
     return res
 
 
-def datatime_to_str(dt = datetime.timedelta(hours=0)):
-    hours = dt.seconds//3600
-    minutes = (dt.seconds//60)%60
+def datatime_to_str(dt=datetime.timedelta(hours=0)):
+    hours = dt.seconds // 3600
+    minutes = (dt.seconds // 60) % 60
     if minutes == 00:
         res = f'{hours}'
     elif minutes == 30:
         res = f'{hours}.5'
     else:
-        minutes = round(minutes/60*100)
+        minutes = round(minutes / 60 * 100)
         res = f'{hours}.{minutes}'
     return res
 
@@ -126,7 +123,7 @@ def calc_hours(calc_name: str, day_type: int, calc_date: str, aways):
                 elif away[AWAY_TYPE_POS] == AWAY_TYPE_HOSP:
                     if away[AWAY_DATE1_POS] <= calc_date <= away[AWAY_DATE2_POS]:
                         res_str = 'Б'
-                else: # away[AWAY_TYPE_POS] == AWAY_TYPE_OTGUL:
+                else:  # away[AWAY_TYPE_POS] == AWAY_TYPE_OTGUL:
                     pass
 
     if res_str not in ['A', 'O', 'Б', 'А', 'О']:
@@ -135,19 +132,7 @@ def calc_hours(calc_name: str, day_type: int, calc_date: str, aways):
     return res_str
 
 
-def date_analysis(date: str):
-    tdate = date.replace('\n', '')
-    if len(tdate) <= 10:  # BAD CONDITION
-        return DATE_TYPE_SINGLE
-    else:
-        date_split_sp = tdate.split(' ')
-        if len(date_split_sp) > 1:
-            return DATE_TYPE_DATE_PLUS_TIME_INTERVAL
-    return DATE_TYPE_DATE_INTERVAL
-
-
 def fill_person_listbox(listbox):
-    # f = open(BASE_PATH, 'r')
     names = db_names_get()
     for name in names:
         listbox.insert(END, f'{name}')
@@ -314,13 +299,13 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
 
         html += '\t\t<tr>\n'  # new row in table
         html += f'\t\t\t<td>{table_index + 1}</td>\t<td id = "al_left">{person_job}</td>\t' \
-                f'<td id = "al_left">{person_name}</td>\t'\
+                f'<td id = "al_left">{person_name}</td>\t' \
                 f'<td>{person_table_num}</td>\t'
         for day in day_range:
             if day == 40:
                 html += f'<td>{sum_days}</td><td>{f_to_nice_str(sum_hours)}</td>\n'
             elif day == 41:
-                html += f'<td>{sum_days-sum_days_half}</td><td>{f_to_nice_str(sum_hours-sum_hours_half)}</td>\n'
+                html += f'<td>{sum_days - sum_days_half}</td><td>{f_to_nice_str(sum_hours - sum_hours_half)}</td>\n'
             elif day == 42:
                 html += f'<td>{sum_days}</td><td>{f_to_nice_str(sum_hours)}</td>\n'
             else:
@@ -352,7 +337,7 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
         html += '\t' + string + '<br>\n'
     html += '</p>\n'
 
-    html += f'<p style="white-space: pre-wrap;">\tНачальник ЛОЦСиА'\
+    html += f'<p style="white-space: pre-wrap;">\tНачальник ЛОЦСиА' \
             f'\t\t\t\t{person[0][DB_NAME_POS]}</p>\n'
 
     html += '</div>\n'
@@ -372,7 +357,6 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
 
     html += '</style>\n'
 
-    print(os.listdir())
     with open(TABLE_PATH, 'w') as table_file:
         table_file.write(html)
     start_file(TABLE_PATH)
@@ -380,7 +364,6 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
 
 def fill_date2(event, entry1, entry2, fill_tp):
     fill_type = fill_tp.get()
-    print(f'{fill_type}; {fill_tp}')
     entry2.config(state='normal')
     entry2.delete(0, 20)
     if fill_type == FILL_TYPE_ADMIN:
@@ -395,7 +378,7 @@ def fill_date2(event, entry1, entry2, fill_tp):
         hosp_start = datetime.strptime(entry1.get(), '%d.%m.%Y')
         hosp_end = hosp_start + timedelta(days=7)
         entry2.insert(0, f'{hosp_end.day}.{hosp_end.month:02d}.'
-                                   f'{hosp_end.year}')
+                         f'{hosp_end.year}')
 
 
 def start_file(file):
@@ -404,6 +387,94 @@ def start_file(file):
     else:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         subprocess.call([opener, file])
+
+
+def td(string, td_id=''):
+    return f'<td>{string}</td>' if td_id == '' else f'<td id="{td_id}">{string}</td>'
+
+
+def tr(string, tr_id=''):
+    return f'<tr>{string}</tr>' if tr_id == '' else f'<tr id="{tr_id}">{string}</tr>'
+
+
+def table(string, table_id=''):
+    return f'<table>{string}</table>' if table_id == '' else f'<table id="{table_id}">{string}</table>'
+
+
+def table_styles():
+    s = 'table { font: 22px Aial; }' \
+        'table, td, tr {' \
+        'border: 1px solid black; ' \
+        'word-break: break-all;' \
+        'border-collapse: collapse;' \
+        'text-align: center;' \
+        'padding: 5px;' \
+        '}' \
+        '#name, #pass {' \
+        'background-color: #E8E8E8' \
+        '}' \
+        '#tab, #job {' \
+        'background-color: #F8F8F8' \
+        '}'
+
+    return f'<style>{s}</style>'
+
+
+def info_base():
+    lines = db_get()
+    html = tr(
+        f'{td("Ф.И.О.", "name")}{td("Табельный номер", "tab")}{td("Номер пропуска", "pass")}{td("Должность", "job")}')
+    for line in lines:
+        row = f'{td(line[DB_NAME_POS], "name")}' \
+              f'{td(line[DB_TABN_POS], "tab")}' \
+              f'{td(line[DB_PASSN_POS], "pass")}' \
+              f'{td(line[DB_JOB_POS], "job")}'
+        html += tr(row)
+
+    html = table(html)
+    html += table_styles()
+    return html
+
+
+def info_help():
+    with open(HELP_PATH, 'r') as f:
+        lines = f.read()
+    return lines
+
+
+def info_aways():
+    lines = db_get_all_aways()
+    html = tr(
+        f'{td("Ф.И.О.", "name")}{td("Тип", "type")}{td("Дата 1", "date1")}{td("Дата 2", "date2")}')
+    for line in lines:
+        row = f'{td(line[AWAY_NAME_POS], "name")}' \
+              f'{td(line[AWAY_TYPE_POS], "type")}' \
+              f'{td(line[AWAY_DATE1_POS], "date1")}' \
+              f'{td(line[AWAY_DATE2_POS], "date2")}'
+        html += tr(row)
+
+    html = table(html)
+    html += table_styles()
+    return html
+
+
+def info_holidays():
+    pass
+
+
+def info(info_type):
+    func_dict = {INFO_AWAYS: info_aways, INFO_BASE: info_base, INFO_HOLIDAY: info_holidays, INFO_HELP: info_help}
+    html = func_dict[info_type]()
+    # if info_type == INFO_BASE:
+    #     html = info_base()
+    # elif info_type == INFO_HELP:
+    #     html = info_help()
+    # else:
+    #     html = ''
+
+    with open(INFO_PATH, 'w') as f:
+        f.write(html)
+    start_file(INFO_PATH)
 
 
 if __name__ == '__main__':
@@ -424,5 +495,5 @@ if __name__ == '__main__':
     # print(calc_hours('Поляков А.Е.', DAY_NORM, '2.03.2021', aways))
     # print(make_table_subtitle('04.2021', aways))
 
-
     # 192.168.142.209
+    pass

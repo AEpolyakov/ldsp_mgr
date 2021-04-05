@@ -1,10 +1,7 @@
+from utils import fill_person_listbox, make_report, make_report_record, make_table, fill_date2, info
 from tkinter import *
-from tkinter import messagebox
 import tkinter.ttk as tk_ttk
-from datetime import datetime, timedelta
-from utils import normalize, hhmm_to_float, f_to_nice_str, calc_overlap, calc_hours, date_analysis
-from utils import fill_person_listbox, make_report, make_report_record, make_table_subtitle, make_table, fill_date2
-from consts import PAGE_ADMIN, PAGE_TABLE, PAGE_MAGIC, PAGE_BASE, TABLE_TYPE_FULL, TABLE_TYPE_HALF
+from consts import *
 
 root = Tk()
 root.title('табель-менеджер')
@@ -52,7 +49,7 @@ rb_otpusk = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="бол�
 rb_hospital = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="отпуск",
                           value=3, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=410, y=20)
 
-today = datetime.now()
+today = datetime.datetime.now()
 
 entry_away_date1 = Entry(pages[PAGE_ADMIN], width=10)
 entry_away_date1.place(x=200, y=50)
@@ -61,7 +58,8 @@ entry_away_date1.insert(0, f'{today.day}.{today.month}.{today.year}')
 entry_away_date2 = Entry(pages[PAGE_ADMIN], width=10)
 entry_away_date2.place(x=300, y=50)
 entry_away_date2['state'] = 'disabled'
-entry_away_date2.bind('<Button-1>', lambda e, ent1=entry_away_date1, ent2=entry_away_date2, tp=away_doc_type: fill_date2(e, ent1, ent2, tp))
+entry_away_date2.bind('<Button-1>', lambda e, ent1=entry_away_date1, ent2=entry_away_date2,
+                                           tp=away_doc_type: fill_date2(e, ent1, ent2, tp))
 
 Button(pages[PAGE_ADMIN], width=15, text='Заявка!', command=make_table).place(x=200, y=100)
 
@@ -82,23 +80,23 @@ magic_date_entry = Entry(pages[PAGE_MAGIC], width=7)
 magic_date_entry.insert(0, f'{today.month}.{today.year}')
 magic_date_entry.pack()
 button_make_magic = Button(pages[PAGE_MAGIC], width=30, text='ведомость учёта рабочего времени!', relief=GROOVE,
-                                ).pack()
+                           ).pack()
 # Label(pages[PAGE_MAGIC], text='в разработке :-(').pack()
 
 # items on page 4: data base
 Button(pages[PAGE_BASE], width=30, text='База записей', relief=GROOVE,
-       ).pack()
+       command=lambda x=INFO_AWAYS: info(x)).pack()
 Button(pages[PAGE_BASE], width=30, text='База сотрудников', relief=GROOVE,
-       ).pack()
+       command=lambda x=INFO_BASE: info(x)).pack()
 Button(pages[PAGE_BASE], width=30, text='База праздников', relief=GROOVE,
-       ).pack()
+       command=lambda x=INFO_HOLIDAY: info(x)).pack()
 Button(pages[PAGE_BASE], width=30, text='База сокращённых дней', relief=GROOVE,
-       ).pack()
+       command=lambda x=INFO_SHORT_DAY: info(x)).pack()
 Button(pages[PAGE_BASE], width=30, text='Последний табель', relief=GROOVE,
-       ).pack()
+       command=lambda x=INFO_LAST_TAB: info(x)).pack()
 Button(pages[PAGE_BASE], width=30, text='Пояледняя заявка', relief=GROOVE,
-       ).pack()
-Button(pages[PAGE_BASE], width=10, text='Справка', relief=GROOVE,
-       ).place(x=350, y=0)
+       command=lambda x=INFO_LAST_STATEMENT: info(x)).pack()
+Button(pages[PAGE_BASE], width=8, text='Справка', relief=GROOVE,
+       command=lambda x=INFO_HELP: info(x)).place(x=400, y=0)
 
 root.mainloop()
