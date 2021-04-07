@@ -1,4 +1,5 @@
 import pymysql
+import datetime
 
 
 def set_sql_connection():
@@ -94,10 +95,32 @@ def db_read_aways(year, month):
     return res
 
 
+def db_delete_by_id(db_id):
+    connection = set_sql_connection()
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(f'DELETE FROM locsia_away where id={db_id};')
+        connection.commit()
+    return 0
+
+
+def db_insert(rep):
+    print(rep)
+    print(f'INSERT INTO locsia_away (name, type, date1, date2, date_added, name_added) '
+                       f'values ({rep["name"]}, {rep["type"]}, "{rep["date1"]}", "{rep["date2"]}",'
+                       f'"{datetime.datetime.now()}", "QWE")')
+    connection = set_sql_connection()
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute(f'INSERT INTO locsia_away (name, type, date1, date2, date_added, name_added) '
+                       f'values ("{rep["name"]}", "{rep["type"]}", "{rep["date1"]}", "{rep["date2"]}",'
+                       f'"{datetime.datetime.now()}", "QWE")')
+        connection.commit()
+
+
 if __name__ == '__main__':
-    # aways = db_read_aways(2021, 2)
-    # for away in aways:
-    #     print(away)
-    # conn = set_sql_con_samba()
-    # print(conn)
+    report = {'name': 'some_name', 'type': 'some_type', 'date1': datetime.datetime(2021, 12, 12),
+              'date2': datetime.datetime(2021, 12, 13), 'string_date': datetime.datetime.now(), 'string_away': ''}
+    db_insert(report)
+
     pass

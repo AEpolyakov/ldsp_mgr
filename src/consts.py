@@ -13,6 +13,7 @@ DAY_SATURDAY = 3
 
 # BASE_PATH = './files/base.txt'
 # REPORTS_PATH = './files/reports.txt'
+AWAY_PATH = './files/away.html'
 NEW_REPORT_PATH = './files/new_report.html'
 TABLE_PATH = './files/table.html'
 INFO_PATH = './files/info.html'
@@ -32,9 +33,7 @@ PAGE_BASE = 3
 REPORT_TYPE_ADMIN = 0
 REPORT_TYPE_OTGUL = 1
 REPORT_TYPE_HOSPITAL = 2
-REPORT_TYPE_OTPUSK_FULL = 3
-REPORT_TYPE_OTPUSK_HALF1 = 4
-REPORT_TYPE_OTPUSK_HALF2 = 5
+REPORT_TYPE_OTPUSK = 3
 
 REP_NAME_POS = 0
 REP_TYPE_POS = 1
