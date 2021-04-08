@@ -1,4 +1,4 @@
-from utils import fill_person_listbox, make_report, make_table, fill_date2, info, del_by_id
+from utils import fill_person_listbox, make_report, make_table, fill_date2, info, del_by_id, make_magic
 from tkinter import *
 import tkinter.ttk as tk_ttk
 from consts import *
@@ -85,8 +85,8 @@ magic_date_entry = Entry(pages[PAGE_MAGIC], width=7)
 magic_date_entry.insert(0, f'{today.month}.{today.year}')
 magic_date_entry.pack()
 button_make_magic = Button(pages[PAGE_MAGIC], width=30, text='ведомость учёта рабочего времени!', relief=GROOVE,
-                           ).pack()
-# Label(pages[PAGE_MAGIC], text='в разработке :-(').pack()
+                           command=lambda dt=magic_date_entry: make_magic(dt)).pack()
+
 
 # items on page 4: data base
 Button(pages[PAGE_BASE], width=30, text='База записей', relief=GROOVE,

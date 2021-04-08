@@ -105,10 +105,6 @@ def db_delete_by_id(db_id):
 
 
 def db_insert(rep):
-    print(rep)
-    print(f'INSERT INTO locsia_away (name, type, date1, date2, date_added, name_added) '
-                       f'values ({rep["name"]}, {rep["type"]}, "{rep["date1"]}", "{rep["date2"]}",'
-                       f'"{datetime.datetime.now()}", "QWE")')
     connection = set_sql_connection()
     with connection:
         cursor = connection.cursor()
@@ -119,8 +115,8 @@ def db_insert(rep):
 
 
 if __name__ == '__main__':
-    report = {'name': 'some_name', 'type': 'some_type', 'date1': datetime.datetime(2021, 12, 12),
-              'date2': datetime.datetime(2021, 12, 13), 'string_date': datetime.datetime.now(), 'string_away': ''}
-    db_insert(report)
+    # report = {'name': 'some_name', 'type': 'some_type', 'date1': datetime.datetime(2021, 12, 12),
+    #           'date2': datetime.datetime(2021, 12, 13), 'string_date': datetime.datetime.now(), 'string_away': ''}
+    # db_insert(report)
 
     pass

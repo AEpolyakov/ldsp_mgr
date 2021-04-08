@@ -1,13 +1,13 @@
 import calendar
 import os
-import re
 import subprocess
 import sys
 from datetime import datetime, timedelta
 from tkinter import END, ACTIVE
 
 from consts import *
-from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways, db_get_all_aways, db_delete_by_id
+from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways, db_get_all_aways, db_delete_by_id, \
+    db_insert
 
 
 def hhmm_to_float(hhmm: str):
@@ -139,7 +139,6 @@ def parse_date(date1='1.2.2021', date2=''):
             else:
                 d2 = datetime.datetime.strptime(date2, '%d.%m.%Y')
                 ds = f'c {date1} по {date2}'
-        print(f'ds = {ds}')
         return d1, d2, ds
     except TypeError:
         return None, None, None
@@ -147,8 +146,10 @@ def parse_date(date1='1.2.2021', date2=''):
 
 def make_report(away_type, listbox, date1, date2, status_label):
     d1, d2, ds = parse_date(date1.get(), date2.get())
-    report = {'name': listbox.get(ACTIVE), 'type': away_type.get(),
+
+    report = {'name': listbox.get(ACTIVE), 'type': TYPE_DICT[away_type.get()],
               'date1': d1, 'date2': d2, 'string_date': ds, 'string_away': ''}
+    print(report)
     if report['date1'] is None:
         status_label['text'] = '!! неверная дата !!'
     else:
@@ -158,7 +159,7 @@ def make_report(away_type, listbox, date1, date2, status_label):
 
         person = db_get('*', report['name'])[0]
 
-        if report['type'] != REPORT_TYPE_HOSPITAL:
+        if report['type'] != AWAY_TYPE_HOSP:
             html = ''
             html += '<div id = "m_text">' + '\n'
             html += '\t' + '<table id = "m_text">' + '\n'
@@ -176,14 +177,14 @@ def make_report(away_type, listbox, date1, date2, status_label):
             html += '\t' + '</table>' + '\n'
             html += '\t<p id = "z">Заявление</p>\n'
 
-            if report['type'] == REPORT_TYPE_ADMIN:
+            if report['type'] == AWAY_TYPE_ADMIN:
                 away_reason = f'Прошу предоставить мне отпуск без сохранения заработной платы {report["string_date"]}' \
                               f' по семейным обстоятельствам.'
                 status_label['text'] = 'заявка на административный отпуск оформлена!'
-            elif report['type'] == REPORT_TYPE_OTGUL:
+            elif report['type'] == AWAY_TYPE_OTGUL:
                 away_reason = f'Прошу предоставить мне отгул {report["string_date"]} за заранее отработанное время'
                 status_label['text'] = 'заявка на отгул оформлена!'
-            elif report['type'] == REPORT_TYPE_OTPUSK:
+            elif report['type'] == AWAY_TYPE_OTPUSK:
                 away_reason = f'Прошу предоставить очередной отпуск за {report["date1"].year} г. ' \
                               f'{report["string_date"]}.'
                 status_label['text'] = 'заявка отпуск оформлена!'
@@ -203,14 +204,14 @@ def make_report(away_type, listbox, date1, date2, status_label):
         elif report['type'] == REPORT_TYPE_HOSPITAL:
             status_label['text'] = 'информация о больничном принята'
 
-        make_db_record(report)
+        db_insert(report)
+        refresh_info()
 
 
-def make_db_record(report):
-    print(f'make_db_record: {report}')
-    # with open(REPORTS_PATH, 'a') as rep:
-    #     rep.write(f'{name}, {rep_type}, {rep_date}\n')
-    # rep.close()
+def refresh_info():
+    html = info_aways()
+    with open(INFO_PATH, 'w') as f:
+        f.write(html)
 
 
 def make_table_subtitle(table_date: str, aways):
@@ -242,8 +243,7 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
     table_month = int(table_date_split[0])
 
     aways = db_read_aways(table_year, table_month)
-    for away in aways:
-        print(away)
+
     holidays, short_days = db_read_colored_days(table_year, table_month)
 
     html = ''
@@ -367,7 +367,7 @@ def fill_date2(event, entry1, entry2, fill_tp):
         otpusk_end = otpusk_start + timedelta(days=14)
         entry2.insert(0, f'{otpusk_end.day}.{otpusk_end.month:02d}.{otpusk_end.year}')
     elif fill_type == FILL_TYPE_HOSPITAL:
-        hosp_start = datetime.datetime.strptime(entry1.get(), '%d.%m.%Y')  # datetime.strptime(entry1.get(), '%d.%m.%Y')
+        hosp_start = datetime.datetime.strptime(entry1.get(), '%d.%m.%Y')
         hosp_end = hosp_start + timedelta(days=7)
         entry2.insert(0, f'{hosp_end.day}.{hosp_end.month:02d}.'
                          f'{hosp_end.year}')
@@ -381,15 +381,18 @@ def start_file(file):
         subprocess.call([opener, file])
 
 
-def td(string, td_id=''):
-    return f'<td>{string}</td>' if td_id == '' else f'<td id="{td_id}">{string}</td>'
+def td(string='', td_id='', cs=1, rs=1):
+    colspan = f' colspan={cs}' if cs > 1 else ''
+    rowspan = f' rowspan={rs}' if rs > 1 else ''
+    str_id = f' id="{td_id}"' if td_id else ''
+    return f'<td{str_id}{rowspan}{colspan}>{string}</td>'
 
 
-def tr(string, tr_id=''):
+def tr(string='', tr_id=''):
     return f'<tr>{string}</tr>' if tr_id == '' else f'<tr id="{tr_id}">{string}</tr>'
 
 
-def table(string, table_id=''):
+def table(string='', table_id=''):
     return f'<table>{string}</table>' if table_id == '' else f'<table id="{table_id}">{string}</table>'
 
 
@@ -417,10 +420,11 @@ def info_styles():
 
 def del_by_id(db_id_entry, label):
     db_id = db_id_entry.get()
-    if db_id is not None:
+    try:
         db_delete_by_id(int(db_id))
         label['text'] = f'запись {db_id} удалена'
-    else:
+        refresh_info()
+    except ValueError:
         label['text'] = f'неверный номер'
 
 
@@ -476,31 +480,42 @@ def info(info_type):
     start_file(INFO_PATH)
 
 
+def make_magic(date_entry):
+    strs = ['№ сектора', 'месяц', 'Начальник сектора', '№ подразделения',
+            'Ведомость учёта времени и зарплаты по ордерам', '!!!1', '!!!2', '!!!3', '!!!4',
+            '№ п/п.', 'Фамилия И.О.', 'Таб. №', 'Оклад',
+            'Часов. ставка', 'Всего', 'Ордера', 'Час', 'Зарпл.', 'час', 'з/пл.', 'Итого:',
+            'Начальник ЛОЦСиА Туров Г.Г.']
+    persons = [['qwe', 12456, 100], ['ads', 23456, 120], ['ads', 23456, 120]]
+    hours = 0
+    html = tr(td(strs[0], cs=2) + td(strs[1], cs=2) + td(strs[2], cs=3) + td(strs[3], cs=3) + td(strs[4], rs=3, cs=14))
+    html += tr(td(strs[5], cs=2) + td(strs[6], cs=2) + td(strs[7], cs=3) + td(strs[8], cs=3))
+    html += tr(td('', td_id='e1', cs=10))
+    html += tr(td(strs[9], rs=3) + td(strs[10], rs=3, cs=2) + td(strs[11], rs=3, cs=2) + td(strs[12], rs=3) +
+               td(strs[13], rs=3, cs=2) + td(strs[14], cs=2) + td(strs[15], cs=14))
+    html += tr(td(strs[16], rs=2) + td(strs[17], rs=2) + td('', td_id='e1', cs=2) * 7)
+    html += tr((td(strs[18]) + td(strs[19])) * 7)
+    html += tr(td(td_id='e1') + td(cs=2) * 2 + td() + td(cs=2) + td() * 16)
+
+    html += tr(td(td_id='e1') + td(cs=2) * 2 + td() + td(cs=2) + td() * 16)
+
+    for person in persons:
+        html += tr(td(td_id='e1') + td(person[0], cs=2) + td(f'{person[1]}', cs=2) + td() + td(cs=2) +
+                   td(f'{person[2]}') + td() * 15)
+        hours += person[2]
+
+    html += tr(td(td_id='e1') + td(strs[20], cs=7) + td(f'{hours}') + td() * 15)
+    html += tr(td(td_id='e1') + td(cs=2) * 2 + td() + td(cs=2) + td() * 16)
+    html += tr(td(td_id='e1', cs=14) + td(strs[21], cs=10))
+
+    html = f'<table>{html}</table>' + '<style>table {font: 22px Arial}' \
+                                      'table, td, tr {border: 1px solid black; border-collapse: collapse;}' \
+                                      '#e1 { height:30;}</style>'
+
+    with open(MAGIC_PATH, 'w') as f:
+        f.write(html)
+
+
 if __name__ == '__main__':
-    # aways = ( ('Ляхов Е.Л.', 'отпуск', datetime.datetime(2021, 3, 10), datetime.datetime(2021, 4, 10)),
-    #           ('Ляхов Е.Л.',   'админ.', datetime.datetime(2021, 3, 2, 8, 0), datetime.datetime(2021, 3, 8, 8, 30)),
-    #           ('Поляков А.Е.', 'админ.', datetime.datetime(2021, 3, 2, 8, 0), datetime.datetime(2021, 3, 2, 8, 30)),
-    #           ('Поляков А.Е.', 'админ.', datetime.datetime(2021, 3, 3, 8, 0), datetime.datetime(2021, 3, 3, 8, 30)),
-    #           ('Поляков А.Е.', 'админ.', datetime.datetime(2021, 3, 3, 9, 0), datetime.datetime(2021, 3, 3, 10, 0)),
-    #           ('Поляков А.Е.', 'админ.', datetime.datetime(2021, 3, 4, 11, 0), datetime.datetime(2021, 3, 4, 13, 0)),
-    #           ('Поляков А.Е.', 'админ.', datetime.datetime(2021, 3, 5, 12, 0), datetime.datetime(2021, 3, 5, 14, 0)),
-    #           ('Поляков А.Е.', 'админ.', datetime.datetime(2021, 3, 6, 15, 0), datetime.datetime(2021, 3, 6, 17, 0)),
-    #           ('Поляков А.Е.', 'отпуск', datetime.datetime(2021, 3, 10), datetime.datetime(2021, 3, 25)),
-    #           ('Романова К.А.', 'больн.', datetime.datetime(2021, 3, 10), datetime.datetime(2021, 3, 25)),
-    # )
-    # print(calc_hours('Ляхов Е.Л.', DAY_NORM, '12.03.2021', aways))
-    # print(calc_hours('Ляхов Е.Л.', DAY_NORM, '8.03.2021', aways))
-    # print(calc_hours('Поляков А.Е.', DAY_NORM, '12.03.2021', aways))
-    # print(calc_hours('Поляков А.Е.', DAY_NORM, '2.03.2021', aways))
-    # print(make_table_subtitle('04.2021', aways))
-
-    # 192.168.142.209
-
-    # print(parse_date('7.04.2021'))
-    # print(parse_date('7.04.2021', '8.04.2021'))
-    # print(parse_date('7.04.2021', '8.00-17.00'))
-    # print(parse_date('7.04.2021', '8.00-14.30'))
-    # print(parse_date('7.04.2021', '8-17'))
-    # print(parse_date('7.04.2021', '8,15-11,45'))
-
+    make_magic('4.2021')
     pass
