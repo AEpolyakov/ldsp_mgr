@@ -1,4 +1,5 @@
 import datetime
+import os
 
 WORK_START = datetime.timedelta(hours=8)
 WORK_END = datetime.timedelta(hours=17)
@@ -11,16 +12,19 @@ DAY_NORM = 1
 DAY_SHORT = 2
 DAY_SATURDAY = 3
 
-# BASE_PATH = './files/base.txt'
-# REPORTS_PATH = './files/reports.txt'
-AWAY_PATH = './files/away.html'
-NEW_REPORT_PATH = './files/new_report.html'
-TABLE_PATH = './files/table.html'
-INFO_PATH = './files/info.html'
-# SHORT_DAY_PATH = './files/short_days.txt'
-# HOLIDAY_PATH = './files/holidays.txt'
-HELP_PATH = './files/help.html'
-MAGIC_PATH = '../files/magic.html'
+# AWAY_PATH = './files/away.html'
+# NEW_REPORT_PATH = './files/new_report.html'
+# TABLE_PATH = './files/table.html'
+# INFO_PATH = './files/info.html'
+# HELP_PATH = './files/help.html'
+# MAGIC_PATH = '../files/magic.html'
+
+AWAY_PATH = os.path.join('files', 'away.html')
+NEW_REPORT_PATH = os.path.join('files', 'new_report.html')
+TABLE_PATH = os.path.join('files', 'table.html')
+INFO_PATH = os.path.join('files', 'info.html')
+HELP_PATH = os.path.join('files', 'help.html')
+MAGIC_PATH = os.path.join('files', 'magic.html')
 
 RU_DATE_FORMAT_5 = '%d.%m.%Y %H.%M'
 RU_DATE_FORMAT_3 = '%d.%m.%Y'

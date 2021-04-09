@@ -7,7 +7,7 @@ from tkinter import END, ACTIVE
 
 from consts import *
 from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways, db_get_all_aways, db_delete_by_id, \
-    db_insert
+    db_insert, db_get_lab_data
 
 
 def hhmm_to_float(hhmm: str):
@@ -125,8 +125,7 @@ def parse_date(date1='1.2.2021', date2=''):
                 date2_spl = date2.split('-')  # ('8.00', '12.00')
                 date2_0_spl = date2_spl[0].split('.')  # ('8', '00')
                 date2_1_spl = date2_spl[1].split('.')  # ('12', '00')
-                ds = f'{date1} c {date2_spl[0]} по {date2_spl[1]}'
-                if len(date2_0_spl) == 1:
+                if len(date2_0_spl) == 1:  # '8-12'
                     dt1 = datetime.timedelta(hours=int(date2_0_spl[0]))
                 else:
                     dt1 = datetime.timedelta(hours=int(date2_0_spl[0]), minutes=int(date2_0_spl[1]))
@@ -134,9 +133,13 @@ def parse_date(date1='1.2.2021', date2=''):
                     dt2 = datetime.timedelta(hours=int(date2_1_spl[0]))
                 else:
                     dt2 = datetime.timedelta(hours=int(date2_1_spl[0]), minutes=int(date2_1_spl[1]))
+                if dt1 == datetime.timedelta(hours=8) and dt2 == datetime.timedelta(hours=17):
+                    ds = f'{date1}'
+                else:
+                    ds = f'{date1} c {date2_spl[0]} по {date2_spl[1]}'
                 d2 = d1 + dt2
                 d1 += dt1
-            else:
+            else:  # date2 = '01.01.2021'
                 d2 = datetime.datetime.strptime(date2, '%d.%m.%Y')
                 ds = f'c {date1} по {date2}'
         return d1, d2, ds
@@ -229,13 +232,14 @@ def make_table_subtitle(table_date: str, aways):
     return s
 
 
-def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
+def make_table_html(table_date_entry, table_type):
     str_month = ('', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сенябрь',
                  'октябрь', 'ноябрь', 'декабрь')
     str_month2 = ('', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сенября',
                   'октября', 'ноября', 'декабря')
 
     person = db_get()
+    magic = []
 
     table_date = table_date_entry.get()
     table_date_split = str(table_date).split('.')
@@ -316,7 +320,7 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
                             sum_hours_half += float(cur_hours)
                             sum_days_half += 1
                     html += f'<td id="hc">{cur_hours}</td>'
-
+        magic.append([person_name, person_table_num, int(sum_hours) if sum_hours.is_integer() else sum_hours])
         html += '\t\t</tr>\n'  # end of row
         table_index += 1
 
@@ -348,7 +352,11 @@ def make_table(table_date_entry, table_type='TABLE_TYPE_FULL'):
         html += '\t @media print { @page {size: A4 landscape} }\n'
 
     html += '</style>\n'
+    return html, magic
 
+
+def make_table(table_date_entry, table_type):
+    html, magic = make_table_html(table_date_entry, table_type)
     with open(TABLE_PATH, 'w') as table_file:
         table_file.write(html)
     start_file(TABLE_PATH)
@@ -375,7 +383,7 @@ def fill_date2(event, entry1, entry2, fill_tp):
 
 def start_file(file):
     if sys.platform in ['win32', 'win64']:
-        os.startfile(file)
+        os.startfile('.' + file)
     else:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         subprocess.call([opener, file])
@@ -392,8 +400,10 @@ def tr(string='', tr_id=''):
     return f'<tr>{string}</tr>' if tr_id == '' else f'<tr id="{tr_id}">{string}</tr>'
 
 
-def table(string='', table_id=''):
-    return f'<table>{string}</table>' if table_id == '' else f'<table id="{table_id}">{string}</table>'
+def table(string='', table_id='', cp=''):
+    cellpadding = f' cellpadding = {cp}' if cp else ''
+    table_id = f' id={table_id}' if table_id else ''
+    return f'<table{table_id}{cellpadding}>{string}</table>'
 
 
 def info_styles():
@@ -481,12 +491,21 @@ def info(info_type):
 
 
 def make_magic(date_entry):
+    void, persons = make_table_html(date_entry, table_type=TABLE_TYPE_FULL)
+    lab_data = db_get_lab_data()
+
+    magic_date_spl = date_entry.get().split('.')
+
+    str_month = ('', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сенябрь',
+                 'октябрь', 'ноябрь', 'декабрь')
+
     strs = ['№ сектора', 'месяц', 'Начальник сектора', '№ подразделения',
-            'Ведомость учёта времени и зарплаты по ордерам', '!!!1', '!!!2', '!!!3', '!!!4',
-            '№ п/п.', 'Фамилия И.О.', 'Таб. №', 'Оклад',
-            'Часов. ставка', 'Всего', 'Ордера', 'Час', 'Зарпл.', 'час', 'з/пл.', 'Итого:',
-            'Начальник ЛОЦСиА Туров Г.Г.']
-    persons = [['qwe', 12456, 100], ['ads', 23456, 120], ['ads', 23456, 120]]
+            'Ведомость учёта времени и зарплаты по ордерам', f'{lab_data[0]}',
+            f'{str_month[int(magic_date_spl[0])]} {magic_date_spl[1]}г.', f'{lab_data[3]}',
+            f'{lab_data[1]}', '№ п/п.', 'Фамилия И.О.', 'Таб. №', 'Оклад',
+            'Часов.<br>ставка', 'Всего', 'Ордера', 'Час', 'Зарпл.', 'час', 'з/пл.', 'Итого:',
+            f'Начальник {lab_data[0]} {lab_data[3]}']
+    # persons = [['qwe', 12456, 100], ['ads', 23456, 120], ['ads', 23456, 120]]
     hours = 0
     html = tr(td(strs[0], cs=2) + td(strs[1], cs=2) + td(strs[2], cs=3) + td(strs[3], cs=3) + td(strs[4], rs=3, cs=14))
     html += tr(td(strs[5], cs=2) + td(strs[6], cs=2) + td(strs[7], cs=3) + td(strs[8], cs=3))
@@ -508,12 +527,16 @@ def make_magic(date_entry):
     html += tr(td(td_id='e1') + td(cs=2) * 2 + td() + td(cs=2) + td() * 16)
     html += tr(td(td_id='e1', cs=14) + td(strs[21], cs=10))
 
-    html = f'<table>{html}</table>' + '<style>table {font: 22px Arial}' \
-                                      'table, td, tr {border: 1px solid black; border-collapse: collapse;}' \
-                                      '#e1 { height:30;}</style>'
+    html = table(html, cp=5) + '<style>table {font: 20px Arial}' \
+                                      'table, td, tr {border: 2px solid black; word-break: break-all;' \
+                                      'border-collapse: collapse; text-align: center}' \
+                                      '#e1 { height:28;} ' \
+                                      '@media print { @page {size: A4 landscape} }' \
+                                      '</style>'
 
     with open(MAGIC_PATH, 'w') as f:
         f.write(html)
+    start_file(MAGIC_PATH)
 
 
 if __name__ == '__main__':

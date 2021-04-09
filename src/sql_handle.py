@@ -114,9 +114,19 @@ def db_insert(rep):
         connection.commit()
 
 
+def db_get_lab_data():
+    connection = set_sql_connection()
+    with connection:
+        cursor = connection.cursor()
+        cursor.execute('select * from locsia_data')
+        res = cursor.fetchall()
+    return res[0]
+
+
 if __name__ == '__main__':
     # report = {'name': 'some_name', 'type': 'some_type', 'date1': datetime.datetime(2021, 12, 12),
     #           'date2': datetime.datetime(2021, 12, 13), 'string_date': datetime.datetime.now(), 'string_away': ''}
     # db_insert(report)
+    print(db_get_lab_data())
 
     pass
