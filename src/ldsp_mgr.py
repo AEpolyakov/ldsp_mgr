@@ -96,7 +96,7 @@ Button(pages[PAGE_BASE], width=30, text='База сотрудников', relie
 
 base_id_entry = Entry(pages[PAGE_BASE], width=7)
 base_id_entry.place(x=40, y=65)
-db_status_label = Label(pages[PAGE_BASE], text='222')
+db_status_label = Label(pages[PAGE_BASE], text='')
 db_status_label.place(x=20, y=150)
 
 Button(pages[PAGE_BASE], width=30, text='Удалить запись', relief=GROOVE,
