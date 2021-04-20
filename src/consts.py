@@ -1,5 +1,7 @@
 import datetime
 import os
+import sys
+
 
 WORK_START = datetime.timedelta(hours=8)
 WORK_END = datetime.timedelta(hours=17)
@@ -12,19 +14,18 @@ DAY_NORM = 1
 DAY_SHORT = 2
 DAY_SATURDAY = 3
 
-# AWAY_PATH = './files/away.html'
-# NEW_REPORT_PATH = './files/new_report.html'
-# TABLE_PATH = './files/table.html'
-# INFO_PATH = './files/info.html'
-# HELP_PATH = './files/help.html'
-# MAGIC_PATH = '../files/magic.html'
+if sys.platform in ['win32', 'win64']:
+    os_shift = '..'
+else:
+    os_shift = ''
 
-AWAY_PATH = os.path.join('files', 'away.html')
-NEW_REPORT_PATH = os.path.join('files', 'new_report.html')
-TABLE_PATH = os.path.join('files', 'table.html')
-INFO_PATH = os.path.join('files', 'info.html')
-HELP_PATH = os.path.join('files', 'help.html')
-MAGIC_PATH = os.path.join('files', 'magic.html')
+AWAY_PATH = os.path.join(os_shift, 'files', 'away.html')
+NEW_REPORT_PATH = os.path.join(os_shift, 'files', 'new_report.html')
+TABLE_PATH = os.path.join(os_shift, 'files', 'table.html')
+INFO_PATH = os.path.join(os_shift, 'files', 'info.html')
+HELP_PATH = os.path.join(os_shift, 'files', 'help.html')
+MAGIC_PATH = os.path.join(os_shift, 'files', 'magic.html')
+
 
 RU_DATE_FORMAT_5 = '%d.%m.%Y %H.%M'
 RU_DATE_FORMAT_3 = '%d.%m.%Y'

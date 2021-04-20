@@ -383,7 +383,8 @@ def fill_date2(event, entry1, entry2, fill_tp):
 
 def start_file(file):
     if sys.platform in ['win32', 'win64']:
-        os.startfile('.' + file)
+        os.startfile(file)
+        os.listdir()
     else:
         opener = "open" if sys.platform == "darwin" else "xdg-open"
         subprocess.call([opener, file])
