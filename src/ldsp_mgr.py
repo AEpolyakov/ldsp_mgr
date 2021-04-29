@@ -1,11 +1,11 @@
-from utils import fill_person_listbox, make_report, make_table, fill_date2, info, del_by_id, make_magic
+from utils import fill_person_listbox, make_report, make_table, fill_date2, info, del_by_id, make_magic, open_base_editor
 from tkinter import *
 import tkinter.ttk as tk_ttk
 from consts import *
 
 root = Tk()
 root.title('табель-менеджер')
-root.geometry('500x220-0-35')
+root.geometry('600x220-0-35')
 
 menu = tk_ttk.Notebook(root)
 menu.pack(fill=BOTH)
@@ -49,6 +49,8 @@ rb_otpusk = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="бол�
                         value=2, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=340, y=20)
 rb_hospital = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="отпуск",
                           value=3, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=410, y=20)
+rb_komand = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="команд.",
+                          value=4, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=480, y=20)
 
 today = datetime.datetime.now()
 
@@ -102,15 +104,9 @@ db_status_label.place(x=20, y=150)
 Button(pages[PAGE_BASE], width=30, text='Удалить запись', relief=GROOVE,
        command=lambda x=base_id_entry, lb=db_status_label: del_by_id(x, lb)).pack()
 
+Button(pages[PAGE_BASE], width=30, text='База записей 2', relief=GROOVE,
+       command=lambda b=root, d="4.2021": open_base_editor(b, d)).pack()
 
-# Button(pages[PAGE_BASE], width=30, text='База праздников', relief=GROOVE,
-#        command=lambda x=INFO_HOLIDAY: info(x)).pack()
-# Button(pages[PAGE_BASE], width=30, text='База сокращённых дней', relief=GROOVE,
-#        command=lambda x=INFO_SHORT_DAY: info(x)).pack()
-# Button(pages[PAGE_BASE], width=30, text='Последний табель', relief=GROOVE,
-#        command=lambda x=INFO_LAST_TAB: info(x)).pack()
-# Button(pages[PAGE_BASE], width=30, text='Пояледняя заявка', relief=GROOVE,
-#        command=lambda x=INFO_LAST_STATEMENT: info(x)).pack()
 Button(pages[PAGE_BASE], width=8, text='Справка', relief=GROOVE,
        command=lambda x=INFO_HELP: info(x)).place(x=400, y=0)
 
