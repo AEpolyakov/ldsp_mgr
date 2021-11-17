@@ -1,9 +1,7 @@
 import calendar
-import os
 import subprocess
-import sys
 from datetime import datetime, timedelta
-from tkinter import END, ACTIVE
+from tkinter import END, ACTIVE, FLAT, Entry, Label, Toplevel, Button, Frame, Scrollbar, Canvas, ttk
 
 from consts import *
 from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways, db_get_all_aways, db_delete_by_id, \
@@ -71,6 +69,8 @@ def calc_hours(calc_name: str, day_type: int, calc_date: str, aways):
         res = WORK_END - WORK_START  # res = 9
     elif day_type == DAY_SHORT:
         res = WORK_END_SHORT - WORK_START  # res = 8
+    elif day_type == DAY_NDDAY:
+        return 'НД'
     else:
         res = WORK_END_SAT - WORK_START
 
@@ -93,13 +93,16 @@ def calc_hours(calc_name: str, day_type: int, calc_date: str, aways):
                 elif away[AWAY_TYPE_POS] == AWAY_TYPE_OTPUSK:
                     if away[AWAY_DATE1_POS] <= calc_date <= away[AWAY_DATE2_POS]:
                         res_str = 'O'
+                elif away[AWAY_TYPE_POS] == AWAY_TYPE_KOMAND:
+                    if away[AWAY_DATE1_POS] <= calc_date <= away[AWAY_DATE2_POS]:
+                        res_str = 'K'
                 elif away[AWAY_TYPE_POS] == AWAY_TYPE_HOSP:
                     if away[AWAY_DATE1_POS] <= calc_date <= away[AWAY_DATE2_POS]:
                         res_str = 'Б'
                 else:  # away[AWAY_TYPE_POS] == AWAY_TYPE_OTGUL:
                     pass
 
-    if res_str not in ['A', 'O', 'Б', 'А', 'О']:
+    if res_str not in exception_list:
         res_str = datatime_to_str(res)
 
     return res_str
@@ -162,7 +165,7 @@ def make_report(away_type, listbox, date1, date2, status_label):
 
         person = db_get('*', report['name'])[0]
 
-        if report['type'] != AWAY_TYPE_HOSP:
+        if report['type'] not in [AWAY_TYPE_HOSP, AWAY_TYPE_KOMAND]:
             html = ''
             html += '<div id = "m_text">' + '\n'
             html += '\t' + '<table id = "m_text">' + '\n'
@@ -206,6 +209,8 @@ def make_report(away_type, listbox, date1, date2, status_label):
             start_file(NEW_REPORT_PATH)
         elif report['type'] == REPORT_TYPE_HOSPITAL:
             status_label['text'] = 'информация о больничном принята'
+        elif report['type'] == REPORT_TYPE_KOMAND:
+            status_label['text'] = 'информация о командировке принята'
 
         db_insert(report)
         refresh_info()
@@ -217,7 +222,7 @@ def refresh_info():
         f.write(html)
 
 
-def make_table_subtitle(table_date: str, aways):
+def make_table_subtitle(aways):
     s = ''
     for away in aways:
         if away[AWAY_TYPE_POS] == AWAY_TYPE_HOSP:
@@ -229,13 +234,18 @@ def make_table_subtitle(table_date: str, aways):
             s1 = away[AWAY_DATE1_POS].strftime("%d.%m.%Y")
             s2 = away[AWAY_DATE2_POS].strftime("%d.%m.%Y")
             s += f'О - отпуск - {away[AWAY_NAME_POS]} {s1} - {s2}\n'
+    for away in aways:
+        if away[AWAY_TYPE_POS] == AWAY_TYPE_KOMAND:
+            s1 = away[AWAY_DATE1_POS].strftime("%d.%m.%Y")
+            s2 = away[AWAY_DATE2_POS].strftime("%d.%m.%Y")
+            s += f'K - командировка - {away[AWAY_NAME_POS]} {s1} - {s2}\n'
     return s
 
 
 def make_table_html(table_date_entry, table_type):
-    str_month = ('', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сенябрь',
+    str_month = ('', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь',
                  'октябрь', 'ноябрь', 'декабрь')
-    str_month2 = ('', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сенября',
+    str_month2 = ('', 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября',
                   'октября', 'ноября', 'декабря')
 
     person = db_get()
@@ -248,7 +258,7 @@ def make_table_html(table_date_entry, table_type):
 
     aways = db_read_aways(table_year, table_month)
 
-    holidays, short_days = db_read_colored_days(table_year, table_month)
+    holidays, short_days, nddays = db_read_colored_days(table_year, table_month)
 
     html = ''
     html += '<div>\n\t<p>График выходов на работу<br>\n'
@@ -279,7 +289,7 @@ def make_table_html(table_date_entry, table_type):
         elif day == 42:
             html += '<td>Дней</td><td>Часов</td>\n'
         elif (datetime.datetime(table_year, table_month, day).weekday() not in (5, 6)) and (day not in holidays) \
-                or (day in short_days):
+                or (day in short_days) or (day in nddays):
             html += f'<td>{day}</td>'
     html += '\t\t</tr>\n'  # end of table header
 
@@ -307,13 +317,15 @@ def make_table_html(table_date_entry, table_type):
             else:
                 if day in short_days:
                     day_type = DAY_SHORT
+                elif day in nddays:
+                    day_type = DAY_NDDAY
                 else:
                     day_type = DAY_NORM
 
                 if datetime.datetime(table_year, table_month, day).weekday() not in (5, 6) and (day not in holidays) \
                         or day_type == DAY_SHORT:
                     cur_hours = calc_hours(person_name, day_type, f'{day}.{table_month}.{table_year}', aways)
-                    if cur_hours not in ['A', 'O', 'А', 'Б', 'О']:
+                    if cur_hours not in exception_list:
                         sum_hours += float(cur_hours)
                         sum_days += 1
                         if day <= 15:
@@ -326,7 +338,7 @@ def make_table_html(table_date_entry, table_type):
 
     html += '\t</table>\n'
 
-    sub = make_table_subtitle(table_date, aways)
+    sub = make_table_subtitle(aways)
     sub_split = sub.split('\n')
     html += '<p>\n'
     for string in sub_split:
@@ -370,9 +382,13 @@ def fill_date2(event, entry1, entry2, fill_tp):
         entry2.insert(0, '8.00-17.00')
     elif fill_type == FILL_TYPE_OTGUL:
         entry2.insert(0, '12.45-17.00')
+    elif fill_type == FILL_TYPE_KOMAND:
+        otpusk_start = datetime.datetime.strptime(entry1.get(), '%d.%m.%Y')
+        otpusk_end = otpusk_start + timedelta(days=3)
+        entry2.insert(0, f'{otpusk_end.day}.{otpusk_end.month:02d}.{otpusk_end.year}')
     elif fill_type == FILL_TYPE_OTPUSK:
         otpusk_start = datetime.datetime.strptime(entry1.get(), '%d.%m.%Y')
-        otpusk_end = otpusk_start + timedelta(days=14)
+        otpusk_end = otpusk_start + timedelta(days=13)
         entry2.insert(0, f'{otpusk_end.day}.{otpusk_end.month:02d}.{otpusk_end.year}')
     elif fill_type == FILL_TYPE_HOSPITAL:
         hosp_start = datetime.datetime.strptime(entry1.get(), '%d.%m.%Y')
@@ -405,6 +421,15 @@ def table(string='', table_id='', cp=''):
     cellpadding = f' cellpadding = {cp}' if cp else ''
     table_id = f' id={table_id}' if table_id else ''
     return f'<table{table_id}{cellpadding}>{string}</table>'
+
+
+def div(string=''):
+    return f'<div>{string}</div>'
+
+
+def p(string='', prewrap=False):
+    s = f'style=" white-space: pre-wrap;"' if prewrap is True else ''
+    return f'<p{s}>{string}</p>'
 
 
 def info_styles():
@@ -491,13 +516,14 @@ def info(info_type):
     start_file(INFO_PATH)
 
 
-def make_magic(date_entry):
-    void, persons = make_table_html(date_entry, table_type=TABLE_TYPE_FULL)
+def make_magic_html(date_entry_entry):
+    date_entry = date_entry_entry.get()
+    void, persons = make_table_html(date_entry_entry, table_type=TABLE_TYPE_FULL)
     lab_data = db_get_lab_data()
 
-    magic_date_spl = date_entry.get().split('.')
+    magic_date_spl = date_entry.split('.')
 
-    str_month = ('', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сенябрь',
+    str_month = ('', 'январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь',
                  'октябрь', 'ноябрь', 'декабрь')
 
     strs = ['№ сектора', 'месяц', 'Начальник сектора', '№ подразделения',
@@ -506,7 +532,7 @@ def make_magic(date_entry):
             f'{lab_data[1]}', '№ п/п.', 'Фамилия И.О.', 'Таб. №', 'Оклад',
             'Часов.<br>ставка', 'Всего', 'Ордера', 'Час', 'Зарпл.', 'час', 'з/пл.', 'Итого:',
             f'Начальник {lab_data[0]} {lab_data[3]}']
-    # persons = [['qwe', 12456, 100], ['ads', 23456, 120], ['ads', 23456, 120]]
+
     hours = 0
     html = tr(td(strs[0], cs=2) + td(strs[1], cs=2) + td(strs[2], cs=3) + td(strs[3], cs=3) + td(strs[4], rs=3, cs=14))
     html += tr(td(strs[5], cs=2) + td(strs[6], cs=2) + td(strs[7], cs=3) + td(strs[8], cs=3))
@@ -528,18 +554,47 @@ def make_magic(date_entry):
     html += tr(td(td_id='e1') + td(cs=2) * 2 + td() + td(cs=2) + td() * 16)
     html += tr(td(td_id='e1', cs=14) + td(strs[21], cs=10))
 
-    html = table(html, cp=5) + '<style>table {font: 20px Arial}' \
-                                      'table, td, tr {border: 2px solid black; word-break: break-all;' \
-                                      'border-collapse: collapse; text-align: center}' \
-                                      '#e1 { height:28;} ' \
-                                      '@media print { @page {size: A4 landscape} }' \
-                                      '</style>'
+    html = table(html, cp='5') + '<style>table {font: 20px Arial}' \
+                                 'table, td, tr {border: 2px solid black; word-break: break-all;' \
+                                 'border-collapse: collapse; text-align: center}' \
+                                 '#e1 { height:28;} ' \
+                                 '@media print { @page {size: A4 landscape} }' \
+                                 '</style>'
+    return html
 
+
+def make_magic(table_data_entry):
+    html = make_magic_html(table_data_entry)
     with open(MAGIC_PATH, 'w') as f:
         f.write(html)
     start_file(MAGIC_PATH)
 
 
+def base_del_string(number):
+    print(number)
+
+
+def open_base_editor(master, date):
+    lines = db_get_all_aways()
+    widths = [3, 14, 6, 18, 18, 2]
+
+    base_window = Toplevel(master)
+    base_window.geometry("950x500")
+
+    height = len(lines)
+    width = 6
+    for i in range(height):  # Rows
+        for j in range(width):  # Columns
+            if j == 5:
+                b = Button(base_window, width=widths[j], text='X',
+                           command=lambda n=int(lines[i][0]): base_del_string(n))
+            else:
+                b = Entry(base_window, width=widths[j], font=('Verdana', 16), relief=FLAT)
+                b.insert(0, f'{lines[i][j]}')
+                # b["state"] = 'disabled'
+            b.grid(row=i, column=j)
+
+
 if __name__ == '__main__':
-    make_magic('4.2021')
+    # make_magic('4.2021')
     pass

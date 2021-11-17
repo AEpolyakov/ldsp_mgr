@@ -78,10 +78,14 @@ def db_read_colored_days(year, month):
     cursor.execute(f'select day from colored_days where (type like "RED" and day >= "{year}-{month}-01" and '
                    f'day <= DATE_ADD("{year}-{month}-01", INTERVAL 1 MONTH))')
     red = cursor.fetchall()
+    cursor.execute(f'select day from colored_days where (type like "NDDAY" and day >= "{year}-{month}-01" and '
+                   f'day <= DATE_ADD("{year}-{month}-01", INTERVAL 1 MONTH))')
+    ndday = cursor.fetchall()
     res_red = [int(date[0].strftime("%d")) for date in red]
     res_blue = [int(date[0].strftime("%d")) for date in blue]
+    res_ndday = [int(date[0].strftime("%d")) for date in ndday]
     connection.close()
-    return res_red, res_blue
+    return res_red, res_blue, res_ndday
 
 
 def db_read_aways(year, month):
