@@ -1,8 +1,7 @@
 import calendar
 import subprocess
 from datetime import datetime, timedelta
-from tkinter import END, ACTIVE, FLAT, Entry, Label, Toplevel, Button, Frame, Scrollbar, Canvas, ttk
-
+from tkinter import END, ACTIVE, CENTER, FLAT, Entry, Label, Toplevel, Button, Frame, Scrollbar, Canvas, ttk
 from consts import *
 from sql_handle import db_names_get, db_get, db_read_colored_days, db_read_aways, db_get_all_aways, db_delete_by_id, \
     db_insert, db_get_lab_data
@@ -321,6 +320,7 @@ def make_table_html(table_date_entry, table_type):
                     day_type = DAY_NDDAY
                 else:
                     day_type = DAY_NORM
+
 
                 if datetime.datetime(table_year, table_month, day).weekday() not in (5, 6) and (day not in holidays) \
                         or day_type == DAY_SHORT:

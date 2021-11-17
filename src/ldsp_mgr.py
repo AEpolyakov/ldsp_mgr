@@ -1,5 +1,4 @@
-from utils import fill_person_listbox, make_report, make_table, fill_date2, info, del_by_id, make_magic, \
-    open_base_editor
+from utils import fill_person_listbox, make_report, make_table, fill_date2, info, del_by_id, make_magic, open_base_editor
 from tkinter import *
 import tkinter.ttk as tk_ttk
 from consts import *
@@ -51,7 +50,11 @@ rb_otpusk = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="бол�
 rb_hospital = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="отпуск",
                           value=3, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=410, y=20)
 rb_komand = Radiobutton(pages[PAGE_ADMIN], variable=away_doc_type, text="команд.",
+<<<<<<< HEAD
                         value=4, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=480, y=20)
+=======
+                          value=4, indicatoron=0, relief=GROOVE, width=BUTTON_WIDTH).place(x=480, y=20)
+>>>>>>> 0e85338edd4076cb74cb7dd9a31fdb134ac9c526
 
 today = datetime.datetime.now()
 
